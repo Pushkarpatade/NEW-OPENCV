@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Blog CMS</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for a clean look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons for modern UI icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Custom CSS for advanced UI elements and animations -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* Slate 100 */
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .slide-in-up { animation: slideInUp 0.4s ease-out forwards; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Rich text editor simulation */
+        .rich-text-editor {
+            border: 1px solid #cbd5e1; padding: 12px; min-height: 200px;
+            border-radius: 8px; background-color: white; transition: all 0.2s ease-in-out;
+        }
+        .rich-text-editor:focus {
+            outline: none; border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+        .comment-thread .comment-thread {
+            margin-left: 20px; padding-left: 20px; border-left: 2px solid #e2e8f0;
+        }
+        .prose { line-height: 1.75; }
+        .prose p { margin-bottom: 1.25em; }
+        
+        /* Floating UI/UX Dashboard Styles */
+        #app-shell { display: flex; min-height: 100vh; }
+        #sidebar {
+            width: 260px;
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            border-right: 1px solid #e2e8f0;
+            display: flex; flex-direction: column; padding: 1.5rem; transition: width 0.3s ease;
+        }
+        #main-dashboard-content { flex-grow: 1; padding: 2.5rem; overflow-y: auto; }
+        .sidebar-link {
+            display: flex; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem;
+            font-weight: 500; color: #334155; transition: all 0.2s ease;
+        }
+        .sidebar-link:hover { background-color: #f1f5f9; color: #0f172a; }
+        .sidebar-link.active { background-color: #e0e7ff; color: #4338ca; font-weight: 600; }
+        .sidebar-link i { font-size: 1.25rem; margin-right: 0.75rem; }
+
+        .content-card {
+            background-color: white; border-radius: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .content-card:hover {
+             box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+             transform: translateY(-4px);
+        }
+
+        #login-view {
+            background-color: #ffffff;
+            background-image: linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(to right, #e5e7eb 1px, #ffffff 1px);
+            background-size: 2rem 2rem;
+        }
+        #post-modal-content {
+            display: flex; flex-direction: column; max-height: 85vh;
+        }
+        #post-form {
+            overflow-y: auto; flex-grow: 1; padding-right: 1rem;
+        }
+        
+        .comment-tab-btn {
+            padding: 0.5rem 1rem; border-bottom: 2px solid transparent;
+            color: #64748b; font-weight: 500; transition: all 0.2s ease;
+        }
+        .comment-tab-btn:hover { color: #1e293b; }
+        .comment-tab-btn.active-tab { color: #4f46e5; border-bottom-color: #4f46e5; }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <!-- Login View (Initially Visible) -->
+    <div id="login-view" class="min-h-screen flex flex-col justify-center items-center p-4 text-center fade-in">
+        <div class="max-w-2xl">
+            <h1 class="text-5xl md:text-7xl font-extrabold text-gray-900 tracking-tight">Blog CMS in minutes</h1>
+            <p class="mt-6 text-lg text-gray-600 max-w-xl mx-auto">
+                Write your content and instantly publish it to your SEO-friendly blog.
+            </p>
+            <div class="mt-10 flex justify-center items-center gap-x-4">
+                <button id="start-publishing-btn" class="bg-gray-900 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-700">Start Publishing</button>
+                <button id="view-examples-btn" class="bg-white text-gray-800 font-semibold py-3 px-6 rounded-lg border border-gray-300 hover:bg-gray-100">View Examples</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login Modal -->
+     <div id="login-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
+             <h2 class="text-2xl font-bold mb-1 text-gray-900">Welcome Back</h2>
+             <p class="text-gray-500 mb-6">Enter your credentials to continue.</p>
+             <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                    <div class="mt-1"><input id="username" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-md" value="AdminUser"></div>
+                </div>
+                 <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <div class="mt-1"><input id="password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-md" value="password"></div>
+                </div>
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-3 px-4 rounded-lg text-white bg-gray-900 hover:bg-gray-700">Sign in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application Container -->
+    <div id="app-shell" class="hidden">
+        <aside id="sidebar">
+            <div class="flex items-center space-x-2 mb-10">
+                 <i class="ph-bold ph-pen-nib text-3xl text-indigo-600"></i>
+                 <h1 class="text-2xl font-bold text-gray-900">Blog CMS</h1>
+            </div>
+            <nav class="flex-grow space-y-2">
+                <a href="#" id="nav-dashboard" class="sidebar-link active"><i class="ph ph-gauge"></i><span>Dashboard</span></a>
+                <a href="#" id="nav-all-posts" class="sidebar-link"><i class="ph ph-files"></i><span>All Posts</span></a>
+                <a href="#" id="nav-new-post" class="sidebar-link"><i class="ph ph-plus-circle"></i><span>New Post</span></a>
+                <a href="#" id="nav-manage-comments" class="sidebar-link"><i class="ph ph-chat-dots"></i><span>Comments</span></a>
+                <a href="#" id="nav-media-library" class="sidebar-link"><i class="ph ph-image"></i><span>Media</span></a>
+                <a href="#" id="nav-analytics" class="sidebar-link"><i class="ph ph-chart-bar"></i><span>Analytics</span></a>
+            </nav>
+            <div class="mt-auto">
+                <div class="space-y-2 border-t border-gray-200 pt-4">
+                    <a href="#" id="nav-settings" class="sidebar-link"><i class="ph ph-gear"></i><span>Settings</span></a>
+                    <a href="#" id="nav-about" class="sidebar-link"><i class="ph ph-info"></i><span>About</span></a>
+                    <a href="#" id="logout-btn" class="sidebar-link"><i class="ph ph-sign-out"></i><span>Logout</span></a>
+                </div>
+            </div>
+        </aside>
+
+        <main id="main-dashboard-content">
+             <div class="flex justify-between items-center mb-8">
+                <h2 id="main-content-title" class="text-3xl font-bold text-gray-900">Dashboard</h2>
+                <div id="welcome-message" class="text-gray-600 font-medium"></div>
+             </div>
+             
+             <div id="main-content-area">
+                <div id="dashboard-view">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <a href="#" id="goto-all-posts" class="content-card block p-6"><h3 class="font-semibold text-gray-500">Total Posts</h3><p id="stats-total-posts" class="text-4xl font-bold mt-2 text-indigo-600">0</p></a>
+                        <a href="#" id="goto-total-comments" class="content-card block p-6"><h3 class="font-semibold text-gray-500">Total Comments</h3><p id="stats-total-comments" class="text-4xl font-bold mt-2 text-teal-600">0</p></a>
+                        <a href="#" id="goto-flagged-comments" class="content-card block p-6"><h3 class="font-semibold text-gray-500">Flagged Comments</h3><p id="stats-flagged-comments" class="text-4xl font-bold mt-2 text-amber-600">0</p></a>
+                    </div>
+                </div>
+                <div id="blog-list-view" class="hidden"><div id="blog-posts-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8"></div></div>
+                <div id="single-post-view" class="hidden"></div>
+                <div id="manage-comments-view" class="hidden content-card p-8">
+                    <div class="flex border-b border-gray-200 mb-6">
+                        <button class="comment-tab-btn active-tab" data-filter="all">All</button>
+                        <button class="comment-tab-btn" data-filter="flagged">Flagged</button>
+                        <button class="comment-tab-btn" data-filter="spam">Spam</button>
+                    </div>
+                    <div id="comments-list-container"></div>
+                </div>
+                <div id="media-library-view" class="hidden"><div class="content-card p-8"><p>Media Library coming soon.</p></div></div>
+                <div id="analytics-view" class="hidden"><div class="content-card p-8"><p>Analytics coming soon.</p></div></div>
+                <div id="settings-view" class="hidden content-card p-8"><p>Settings page coming soon.</p></div>
+                <div id="about-view" class="hidden content-card p-8 prose max-w-none"><h2>About this CMS</h2><p>This is a modern blogging platform designed for creators.</p></div>
+            </div>
+            <footer class="text-center mt-16 py-6 border-t border-gray-200"><p class="text-sm text-gray-500">Created by Pushkar & Sarang</p></footer>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="post-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden fade-in">
+        <div id="post-modal-content" class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl">
+            <h2 id="modal-title" class="text-2xl font-bold mb-6 flex-shrink-0">Add a New Post</h2>
+            <form id="post-form" class="space-y-4">
+                <input type="hidden" id="post-id-input">
+                <div><label for="post-title" class="block text-sm font-medium">Blog Title</label><input type="text" id="post-title" class="w-full p-2 border rounded-lg" required></div>
+                <div><label for="post-image-url" class="block text-sm font-medium">Image URL</label><input type="url" id="post-image-url" class="w-full p-2 border rounded-lg" required></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label for="post-author" class="block text-sm font-medium">Author</label><input type="text" id="post-author" class="w-full p-2 border rounded-lg bg-gray-100" readonly></div>
+                    <div><label for="post-category" class="block text-sm font-medium">Category</label><input type="text" id="post-category" class="w-full p-2 border rounded-lg" required></div>
+                </div>
+                <div><label for="post-content" class="block text-sm font-medium">Content</label><div id="post-content" class="rich-text-editor" contenteditable="true"></div></div>
+            </form>
+            <div class="flex justify-end space-x-4 pt-4 mt-6 border-t">
+                <button type="button" id="cancel-post" class="px-6 py-2 bg-gray-200 rounded-lg">Cancel</button>
+                <button type="submit" form="post-form" class="px-6 py-2 bg-indigo-600 text-white rounded-lg">Publish Post</button>
+            </div>
+        </div>
+    </div>
+    <div id="alert-box" class="hidden fixed top-5 right-5 bg-green-600 text-white py-3 px-6 rounded-lg shadow-lg flex items-center space-x-2 z-[100]">
+        <i class="ph-bold ph-check-circle text-xl"></i>
+        <span id="alert-message"></span>
+    </div>
+
+    <script>
+        // --- CONFIG ---
+        const API_URL = 'http://localhost:3000/api';
+
+        // --- APP STATE ---
+        let loggedInUser = null;
+        let posts = [];
+
+        // --- DOM REFERENCES ---
+        const loginView = document.getElementById('login-view');
+        const loginModal = document.getElementById('login-modal');
+        const appShell = document.getElementById('app-shell');
+        const mainViews = {
+            'dashboard-view': document.getElementById('dashboard-view'), 'blog-list-view': document.getElementById('blog-list-view'),
+            'single-post-view': document.getElementById('single-post-view'), 'manage-comments-view': document.getElementById('manage-comments-view'),
+            'media-library-view': document.getElementById('media-library-view'), 'analytics-view': document.getElementById('analytics-view'),
+            'settings-view': document.getElementById('settings-view'), 'about-view': document.getElementById('about-view')
+        };
+        const postModal = document.getElementById('post-modal');
+        const postForm = document.getElementById('post-form');
+        const mainContentTitle = document.getElementById('main-content-title');
+
+        // --- API CALLS ---
+        async function fetchPosts() {
+            try {
+                const response = await fetch(`${API_URL}/posts`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                posts = await response.json();
+                renderBlogList();
+                renderDashboardStats();
+            } catch (error) {
+                console.error('Failed to fetch posts:', error);
+                showCustomAlert('Error: Could not connect to the server.');
+            }
+        }
+        
+        // --- RENDERING ---
+        function renderDashboardStats() {
+            document.getElementById('stats-total-posts').textContent = posts.length;
+            const allComments = getAllComments();
+            document.getElementById('stats-total-comments').textContent = allComments.filter(c => c.status !== 'spam').length;
+            document.getElementById('stats-flagged-comments').textContent = allComments.filter(c => c.status === 'flagged').length;
+        }
+
+        function renderBlogList() {
+            document.getElementById('blog-posts-container').innerHTML = posts.map(post => {
+                const snippet = new DOMParser().parseFromString(post.content || '', 'text/html').body.textContent.substring(0, 100) + '...';
+                return `<div class="content-card overflow-hidden flex flex-col group"><div class="overflow-hidden relative"><img src="${post.imageUrl}" alt="${post.title}" class="w-full h-52 object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/600x400/e5e7eb/4b5563?text=Image+Missing';"><span class="absolute top-4 right-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full">${post.category}</span></div><div class="p-6 flex-grow flex flex-col"><p class="text-sm text-gray-500">By ${post.author}</p><h3 class="text-xl font-bold mt-2 mb-2">${post.title}</h3><p class="text-gray-600 text-sm flex-grow">${snippet}</p><div class="flex justify-between items-center mt-6 pt-4 border-t"><button class="read-more-btn text-indigo-600 font-semibold" data-id="${post._id}">Read More <i class="ph-bold ph-arrow-right align-middle"></i></button><div class="flex items-center space-x-2"><button class="share-btn text-gray-400" data-id="${post._id}"><i class="ph ph-share-network text-xl"></i></button><button class="edit-post-btn text-gray-400" data-id="${post._id}"><i class="ph ph-pencil-simple text-xl"></i></button><button class="delete-post-btn text-gray-400" data-id="${post._id}"><i class="ph ph-trash-simple text-xl"></i></button></div></div></div></div>`;
+            }).join('');
+        }
+
+        function renderSinglePost(postId) {
+            const post = posts.find(p => p._id === postId);
+            if (!post) { showMainContent('blog-list-view', 'All Posts'); return; }
+            mainViews['single-post-view'].innerHTML = `<div class="content-card p-6 md:p-10 max-w-4xl mx-auto"><button id="back-to-blogs" class="text-indigo-600 font-semibold mb-8 flex items-center space-x-2"><i class="ph-bold ph-arrow-left"></i><span>Back to All Posts</span></button><img src="${post.imageUrl}" alt="${post.title}" class="w-full h-auto md:h-[450px] object-cover rounded-xl mb-8 shadow-lg" onerror="this.src='https://placehold.co/800x450';"><div class="flex items-center justify-between mb-3"><span class="bg-indigo-100 text-indigo-800 text-sm font-bold px-4 py-1.5 rounded-full">${post.category}</span><button class="share-btn text-gray-500 flex items-center space-x-2" data-id="${post._id}"><i class="ph ph-share-network text-xl"></i> <span>Share</span></button></div><h2 class="text-4xl md:text-5xl font-extrabold mb-3">${post.title}</h2><div class="text-base text-gray-500 mb-8">By ${post.author} on ${new Date(post.date).toLocaleDateString()}</div><div class="prose max-w-none mb-12">${post.content}</div><div class="mt-12 pt-8 border-t"><h3 class="text-2xl font-bold mb-6">Comments</h3><div id="comments-section" class="space-y-6">${renderCommentTree(post.comments || [], post._id)}</div><form id="comment-form" class="mt-10" data-post-id="${post._id}"><h4 class="font-semibold mb-3 text-lg">Leave a Comment</h4><textarea id="comment-text" rows="4" placeholder="Write your comment..." class="w-full p-2 border rounded-lg" required></textarea><button type="submit" class="mt-4 bg-indigo-600 text-white font-semibold py-2 px-5 rounded-lg">Post Comment</button></form></div></div>`;
+            showMainContent('single-post-view', post.title);
+        }
+
+        function renderCommentTree(comments, postId) {
+            const visibleComments = comments.filter(c => c.status !== 'spam');
+            if (!visibleComments || visibleComments.length === 0) return '<p class="text-gray-500">Be the first to comment!</p>';
+            return `<div class="comment-thread space-y-6">${visibleComments.map(comment => `<div id="comment-${comment.id}" class="comment-item flex space-x-3"><div class="flex-shrink-0"><div class="h-10 w-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold">${comment.user.charAt(0)}</div></div><div class="flex-1"><div class="font-semibold">${comment.user} ${comment.status === 'flagged' ? '<span class="text-xs text-yellow-600 bg-yellow-100 p-1 rounded-full ml-2">Flagged</span>' : ''}</div><div class="comment-text-content mt-1">${comment.text}</div><div class="comment-actions text-sm text-gray-500 mt-2 flex space-x-4"><button class="reply-btn" data-id="${comment.id}" data-post-id="${postId}">Reply</button><button class="edit-comment-btn" data-id="${comment.id}" data-post-id="${postId}">Edit</button><button class="delete-comment-btn" data-id="${comment.id}" data-post-id="${postId}">Delete</button><button class="flag-comment-btn" data-id="${comment.id}" data-post-id="${postId}"><i class="ph ph-flag align-middle mr-1"></i>Flag</button></div><div class="reply-form-container mt-4"></div>${renderCommentTree(comment.replies || [], postId)}</div></div>`).join('')}</div>`;
+        }
+        
+        // Other rendering functions (manage comments, etc.) would go here.
+
+        // --- UI VISIBILITY & MODALS ---
+        const showMainContent = (viewId, pageTitle) => {
+            Object.values(mainViews).forEach(v => v.classList.add('hidden'));
+            if (mainViews[viewId]) { 
+                mainViews[viewId].classList.remove('hidden');
+            }
+            mainContentTitle.textContent = pageTitle;
+            document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
+            const activeLink = document.getElementById(`nav-${viewId.replace('-view', '')}`);
+            if (activeLink) activeLink.classList.add('active');
+        };
+        
+        const openPostModal = (post = null) => {
+            postForm.reset(); 
+            postForm.querySelector('#post-content').innerHTML = '';
+            if (post) {
+                document.getElementById('modal-title').textContent = 'Edit Post';
+                postForm.querySelector('#post-id-input').value = post._id;
+                postForm.querySelector('#post-title').value = post.title;
+                postForm.querySelector('#post-author').value = post.author;
+                postForm.querySelector('#post-image-url').value = post.imageUrl; 
+                postForm.querySelector('#post-category').value = post.category;
+                postForm.querySelector('#post-content').innerHTML = post.content;
+            } else {
+                document.getElementById('modal-title').textContent = 'Create a New Post';
+                postForm.querySelector('#post-id-input').value = '';
+                postForm.querySelector('#post-author').value = loggedInUser;
+            }
+            postModal.classList.remove('hidden');
+        };
+        const closePostModal = () => postModal.classList.add('hidden');
+        
+        const showCustomAlert = (message, isError = false) => {
+            const alertBox = document.getElementById('alert-box');
+            const alertMessage = document.getElementById('alert-message');
+            alertMessage.textContent = message;
+            alertBox.className = `fixed top-5 right-5 text-white py-3 px-6 rounded-lg shadow-lg flex items-center space-x-2 z-[100] fade-in ${isError ? 'bg-red-600' : 'bg-green-600'}`;
+            alertBox.classList.remove('hidden');
+            setTimeout(() => alertBox.classList.add('hidden'), 3000);
+        };
+        
+        // --- LOGIC & HELPERS ---
+        const getAllComments = () => {
+             let allComments = [];
+            posts.forEach(post => {
+                const extractComments = (comments) => {
+                    comments.forEach(comment => {
+                        allComments.push(comment);
+                        if (comment.replies) extractComments(comment.replies);
+                    });
+                };
+                if(post.comments) extractComments(post.comments);
+            });
+            return allComments;
+        }
+
+        // --- EVENT HANDLERS ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            loggedInUser = document.getElementById('username').value;
+            document.getElementById('welcome-message').textContent = `Welcome, ${loggedInUser}!`;
+            loginModal.classList.add('hidden');
+            loginView.classList.add('hidden');
+            appShell.classList.remove('hidden');
+            await fetchPosts();
+            showMainContent('dashboard-view', 'Dashboard');
+        }
+
+        async function handlePostSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('post-id-input').value;
+            const postData = {
+                title: document.getElementById('post-title').value,
+                author: document.getElementById('post-author').value,
+                category: document.getElementById('post-category').value,
+                imageUrl: document.getElementById('post-image-url').value,
+                content: document.getElementById('post-content').innerHTML,
+            };
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/posts/${id}` : `${API_URL}/posts`;
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(postData),
+                });
+                if (!response.ok) throw new Error('Failed to save post');
+                await fetchPosts();
+                showMainContent('blog-list-view', 'All Posts');
+                closePostModal();
+                showCustomAlert(`Post ${id ? 'updated' : 'created'} successfully!`);
+            } catch (error) {
+                showCustomAlert('Error saving post.', true);
+            }
+        }
+        
+        async function handleCommentSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const postId = form.dataset.postId;
+            const text = form.querySelector('textarea').value;
+            if (!text.trim()) return;
+
+            const commentData = {
+                user: loggedInUser,
+                text: text,
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(commentData),
+                });
+                if (!response.ok) throw new Error('Failed to post comment');
+                const updatedPost = await response.json();
+                const postIndex = posts.findIndex(p => p._id === postId);
+                posts[postIndex] = updatedPost; // Update local state
+                renderSinglePost(postId);
+            } catch (error) {
+                showCustomAlert('Error posting comment.', true);
+            }
+        }
+
+
+        // --- GLOBAL EVENT LISTENER ---
+        document.addEventListener('click', async (e) => {
+            // Sidebar Navigation
+            if (e.target.closest('a.sidebar-link')) {
+                e.preventDefault();
+                const link = e.target.closest('a.sidebar-link');
+                if (link.id === 'nav-new-post') { openPostModal(); return; }
+                if (link.id === 'logout-btn') { window.location.reload(); return; }
+                const viewId = link.id.replace('nav-', '') + '-view';
+                const pageTitle = link.querySelector('span').textContent;
+                showMainContent(viewId, pageTitle);
+            }
+
+            // Post Actions
+            if (e.target.closest('.read-more-btn')) renderSinglePost(e.target.closest('.read-more-btn').dataset.id);
+            if (e.target.closest('.edit-post-btn')) openPostModal(posts.find(p => p._id === e.target.closest('.edit-post-btn').dataset.id));
+            if (e.target.closest('.delete-post-btn')) {
+                const id = e.target.closest('.delete-post-btn').dataset.id;
+                if (confirm('Are you sure you want to delete this post?')) {
+                    try {
+                        const response = await fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' });
+                        if (!response.ok) throw new Error('Failed to delete post');
+                        await fetchPosts();
+                        showCustomAlert('Post deleted successfully!');
+                    } catch (error) {
+                        showCustomAlert('Error deleting post.', true);
+                    }
+                }
+            }
+            
+            if (e.target.closest('#back-to-blogs')) showMainContent('blog-list-view', 'All Posts');
+
+            // Dashboard card clicks
+            if (e.target.closest('#goto-all-posts')) { e.preventDefault(); showMainContent('blog-list-view', 'All Posts'); }
+            if (e.target.closest('#goto-total-comments')) { e.preventDefault(); showMainContent('manage-comments-view', 'Comments'); }
+            if (e.target.closest('#goto-flagged-comments')) { e.preventDefault(); showMainContent('manage-comments-view', 'Comments'); }
+        });
+
+        document.addEventListener('submit', (e) => {
+            if (e.target.id === 'login-form') handleLogin(e);
+            if (e.target.id === 'post-form') handlePostSubmit(e);
+            if (e.target.id === 'comment-form') handleCommentSubmit(e);
+        });
+        
+        // --- INITIALIZATION ---
+        document.getElementById('start-publishing-btn').addEventListener('click', () => loginModal.classList.remove('hidden'));
+        loginModal.addEventListener('click', e => { if (e.target === loginModal) loginModal.classList.add('hidden'); });
+        document.getElementById('cancel-post').addEventListener('click', closePostModal);
+        
+    </script>
+</body>
+</html>
+
